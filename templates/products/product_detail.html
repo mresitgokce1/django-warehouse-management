@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{{ product.name }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">{% trans "Panel" %}</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'products:list' %}">{% trans "Ürünler" %}</a></li>
+        <li class="breadcrumb-item active">{{ product.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Product Images -->
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-body">
+                {% if main_image %}
+                <img src="{{ main_image.image.url }}" class="img-fluid rounded mb-3" alt="{{ product.name }}" id="mainImage">
+                {% elif product.images.first %}
+                <img src="{{ product.images.first.image.url }}" class="img-fluid rounded mb-3" alt="{{ product.name }}" id="mainImage">
+                {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3" style="height: 400px;">
+                    <i class="bi bi-image text-muted" style="font-size: 5rem;"></i>
+                </div>
+                {% endif %}
+                
+                <!-- Image gallery -->
+                {% if images %}
+                <div class="row g-2">
+                    {% for image in images %}
+                    <div class="col-3">
+                        <img src="{{ image.image.url }}" class="img-fluid rounded thumbnail-img" 
+                             alt="{{ product.name }}" style="cursor: pointer; height: 80px; object-fit: cover;"
+                             onclick="changeMainImage('{{ image.image.url }}')">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- QR Code -->
+        {% if product.qr_code %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-qr-code"></i> QR Kod
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ product.qr_code.url }}" alt="QR Code" class="img-fluid" style="max-width: 200px;">
+                <br>
+                <small class="text-muted">{{ product.sku }}</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Product Details -->
+    <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h1 class="h2 mb-1">{{ product.name }}</h1>
+                <p class="text-muted mb-0">
+                    <strong>SKU:</strong> {{ product.sku }}
+                    {% if product.barcode %}
+                    <br><strong>{% trans "Barkod" %}:</strong> {{ product.barcode }}
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="text-end">
+                {% if user.is_brand_admin or user.is_system_admin %}
+                <div class="btn-group">
+                    <a href="{% url 'products:edit' product.slug %}" class="btn btn-outline-success">
+                        <i class="bi bi-pencil"></i> {% trans "Düzenle" %}
+                    </a>
+                    <button type="button" class="btn btn-outline-success dropdown-toggle dropdown-toggle-split" 
+                            data-bs-toggle="dropdown">
+                        <span class="visually-hidden">Toggle Dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'products:edit' product.slug %}">
+                            <i class="bi bi-pencil"></i> {% trans "Düzenle" %}
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'products:delete' product.slug %}">
+                            <i class="bi bi-trash"></i> {% trans "Sil" %}
+                        </a></li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Status Badges -->
+        <div class="mb-3">
+            {% if not product.is_active %}
+            <span class="badge bg-secondary me-2">{% trans "Pasif" %}</span>
+            {% endif %}
+            {% if product.is_featured %}
+            <span class="badge bg-warning me-2">
+                <i class="bi bi-star-fill"></i> {% trans "Öne çıkan" %}
+            </span>
+            {% endif %}
+            {% if product.category %}
+            <span class="badge bg-primary me-2">{{ product.category.name }}</span>
+            {% endif %}
+        </div>
+        
+        <!-- Price Information -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="text-primary mb-1">{{ product.selling_price|floatformat:2 }} ₺</h4>
+                        <small class="text-muted">{% trans "Satış fiyatı" %}</small>
+                    </div>
+                    {% if product.cost_price %}
+                    <div class="col-md-6">
+                        <h5 class="text-muted mb-1">{{ product.cost_price|floatformat:2 }} ₺</h5>
+                        <small class="text-muted">{% trans "Maliyet fiyatı" %}</small>
+                        <br>
+                        <small class="text-success">
+                            <i class="bi bi-graph-up"></i> 
+                            %{{ product.profit_margin|floatformat:1 }} {% trans "kar marjı" %}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stock Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-box-seam"></i> {% trans "Stok Bilgileri" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            {% if product.stock_quantity == 0 %}
+                            <h3 class="text-danger">{{ product.stock_quantity }}</h3>
+                            <small class="text-danger">{% trans "Stokta yok" %}</small>
+                            {% elif product.is_low_stock %}
+                            <h3 class="text-warning">{{ product.stock_quantity }}</h3>
+                            <small class="text-warning">{% trans "Düşük stok" %}</small>
+                            {% else %}
+                            <h3 class="text-success">{{ product.stock_quantity }}</h3>
+                            <small class="text-success">{% trans "Stokta var" %}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-muted">{{ product.min_stock_level }}</h5>
+                            <small class="text-muted">{% trans "Min. seviye" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h5 class="text-muted">{{ product.max_stock_level }}</h5>
+                            <small class="text-muted">{% trans "Max. seviye" %}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Dimensions -->
+        {% if product.weight or product.length or product.width or product.height %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-rulers"></i> {% trans "Fiziksel Özellikler" %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if product.weight %}
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5>{{ product.weight|floatformat:3 }} kg</h5>
+                            <small class="text-muted">{% trans "Ağırlık" %}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if product.length %}
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5>{{ product.length|floatformat:0 }} cm</h5>
+                            <small class="text-muted">{% trans "Uzunluk" %}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if product.width %}
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5>{{ product.width|floatformat:0 }} cm</h5>
+                            <small class="text-muted">{% trans "Genişlik" %}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if product.height %}
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h5>{{ product.height|floatformat:0 }} cm</h5>
+                            <small class="text-muted">{% trans "Yükseklik" %}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Product Description -->
+        {% if product.short_description %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6>{% trans "Kısa Açıklama" %}</h6>
+                <p class="text-muted">{{ product.short_description }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if product.description %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h6>{% trans "Detaylı Açıklama" %}</h6>
+                <div class="text-muted">{{ product.description|linebreaks }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Product Locations -->
+{% if locations %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="bi bi-geo-alt"></i> {% trans "Depo Konumları" %}
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>{% trans "Konum" %}</th>
+                        <th>{% trans "Miktar" %}</th>
+                        <th>{% trans "Son Güncelleme" %}</th>
+                        {% if product.expiry_date %}
+                        <th>{% trans "Son Kullanma" %}</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for location in locations %}
+                    <tr>
+                        <td>
+                            <small>{{ location.cell.full_location }}</small>
+                            {% if location.position_notes %}
+                            <br><em class="text-muted">{{ location.position_notes }}</em>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-primary">{{ location.quantity }}</span></td>
+                        <td><small class="text-muted">{{ location.last_updated|date:"d.m.Y H:i" }}</small></td>
+                        {% if location.expiry_date %}
+                        <td>
+                            <small class="{% if location.is_expired %}text-danger{% elif location.days_to_expiry < 30 %}text-warning{% endif %}">
+                                {{ location.expiry_date|date:"d.m.Y" }}
+                            </small>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Stock Movements -->
+{% if recent_movements %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="bi bi-arrow-left-right"></i> {% trans "Son Stok Hareketleri" %}
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>{% trans "Tarih" %}</th>
+                        <th>{% trans "Tür" %}</th>
+                        <th>{% trans "Miktar" %}</th>
+                        <th>{% trans "Önceki Stok" %}</th>
+                        <th>{% trans "Yeni Stok" %}</th>
+                        <th>{% trans "Kullanıcı" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in recent_movements %}
+                    <tr>
+                        <td><small>{{ movement.created_at|date:"d.m.Y H:i" }}</small></td>
+                        <td>
+                            {% if movement.movement_type == 'in' %}
+                            <span class="badge bg-success">{{ movement.get_movement_type_display }}</span>
+                            {% elif movement.movement_type == 'out' %}
+                            <span class="badge bg-danger">{{ movement.get_movement_type_display }}</span>
+                            {% else %}
+                            <span class="badge bg-info">{{ movement.get_movement_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if movement.quantity > 0 %}
+                            <span class="text-success">+{{ movement.quantity }}</span>
+                            {% else %}
+                            <span class="text-danger">{{ movement.quantity }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ movement.previous_stock }}</td>
+                        <td>{{ movement.new_stock }}</td>
+                        <td>
+                            {% if movement.user %}
+                            <small>{{ movement.user.get_full_name|default:movement.user.username }}</small>
+                            {% else %}
+                            <small class="text-muted">{% trans "Sistem" %}</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changeMainImage(imageSrc) {
+    document.getElementById('mainImage').src = imageSrc;
+}
+
+// Add click events to thumbnail images
+document.querySelectorAll('.thumbnail-img').forEach(function(img) {
+    img.addEventListener('click', function() {
+        // Remove active class from all thumbnails
+        document.querySelectorAll('.thumbnail-img').forEach(function(thumb) {
+            thumb.classList.remove('border', 'border-primary');
+        });
+        
+        // Add active class to clicked thumbnail
+        this.classList.add('border', 'border-primary');
+    });
+});
+</script>
+{% endblock %}
