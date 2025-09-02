@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profil - {{ block.super }}{% endblock %}
+
+{% block page_header %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-person-circle"></i>
+                Profil
+            </h1>
+            <div>
+                <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Profili Düzenle
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Panel</a></li>
+        <li class="breadcrumb-item active">Profil</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Profile Picture and Basic Info -->
+        <div class="card">
+            <div class="card-body text-center">
+                {% if profile_user.profile_image %}
+                    <img src="{{ profile_user.profile_image.url }}" 
+                         alt="{{ profile_user.get_full_name|default:profile_user.username }}" 
+                         class="rounded-circle mb-3" 
+                         style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle mb-3 mx-auto bg-light d-flex align-items-center justify-content-center" 
+                         style="width: 150px; height: 150px;">
+                        <i class="bi bi-person" style="font-size: 4rem; color: #6c757d;"></i>
+                    </div>
+                {% endif %}
+                
+                <h4>{{ profile_user.get_full_name|default:profile_user.username }}</h4>
+                
+                <span class="badge bg-primary mb-2">{{ profile_user.get_role_display }}</span>
+                
+                {% if profile_user.brand %}
+                    <p class="text-muted">
+                        <i class="bi bi-building"></i> {{ profile_user.brand.name }}
+                    </p>
+                {% endif %}
+                
+                {% if profile_user.is_active %}
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle"></i> Aktif
+                    </span>
+                {% else %}
+                    <span class="badge bg-danger">
+                        <i class="bi bi-x-circle"></i> Pasif
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-graph-up"></i> İstatistikler
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <div class="h4 mb-1">{{ profile_user.custom_permissions.count }}</div>
+                            <small class="text-muted">İzin</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 mb-1">
+                            {% if profile_user.qr_scans.exists %}
+                                {{ profile_user.qr_scans.count }}
+                            {% else %}
+                                0
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">QR Tarama</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Personal Information -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-person-badge"></i> Kişisel Bilgiler
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="120">Kullanıcı Adı:</th>
+                                <td>{{ profile_user.username }}</td>
+                            </tr>
+                            <tr>
+                                <th>Ad:</th>
+                                <td>{{ profile_user.first_name|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Soyad:</th>
+                                <td>{{ profile_user.last_name|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th>E-posta:</th>
+                                <td>{{ profile_user.email|default:"—" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="120">Telefon:</th>
+                                <td>{{ profile_user.phone|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Rol:</th>
+                                <td>{{ profile_user.get_role_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Marka:</th>
+                                <td>{{ profile_user.brand.name|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Üyelik Tarihi:</th>
+                                <td>{{ profile_user.date_joined|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Permissions -->
+        {% if profile_user.custom_permissions.exists %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-shield-check"></i> Özel İzinler
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for permission in profile_user.custom_permissions.all %}
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle text-success me-2"></i>
+                            <span>{{ permission.get_permission_display }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Recent QR Scans -->
+        {% if profile_user.qr_scans.exists %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-qr-code"></i> Son QR Taramalar
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>QR Kod</th>
+                                <th>Tarih</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in profile_user.qr_scans.all|slice:":5" %}
+                            <tr>
+                                <td>{{ scan.qr_code.title }}</td>
+                                <td>{{ scan.scanned_at|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    <span class="badge bg-success">Başarılı</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Account Security -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-shield-lock"></i> Hesap Güvenliği
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong>Son Giriş:</strong> 
+                            {% if profile_user.last_login %}
+                                {{ profile_user.last_login|date:"d.m.Y H:i" }}
+                            {% else %}
+                                Henüz giriş yapmamış
+                            {% endif %}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Hesap Durumu:</strong>
+                            {% if profile_user.is_active %}
+                                <span class="text-success">Aktif</span>
+                            {% else %}
+                                <span class="text-danger">Pasif</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid">
+                            <a href="{% url 'accounts:password_reset' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-key"></i> Şifre Değiştir
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

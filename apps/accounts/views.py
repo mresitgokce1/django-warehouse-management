@@ -46,24 +46,43 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         elif user.is_brand_admin:
             # Brand Admin Dashboard
             brand = user.brand
-            context.update({
-                'brand': brand,
-                'total_shops': brand.shops.count(),
-                'total_products': brand.products.count(),
-                'total_users': User.objects.filter(brand=brand).count(),
-                'recent_products': brand.products.order_by('-created_at')[:5],
-                'low_stock_products': brand.products.filter(
-                    stock_quantity__lte=F('min_stock_level')
-                )[:5],
-            })
+            if brand:
+                context.update({
+                    'brand': brand,
+                    'total_shops': brand.shops.count(),
+                    'total_products': brand.products.count(),
+                    'total_users': User.objects.filter(brand=brand).count(),
+                    'recent_products': brand.products.order_by('-created_at')[:5],
+                    'low_stock_products': brand.products.filter(
+                        stock_quantity__lte=F('min_stock_level')
+                    )[:5],
+                })
+            else:
+                # Brand admin without assigned brand - show empty data
+                context.update({
+                    'brand': None,
+                    'total_shops': 0,
+                    'total_products': 0,
+                    'total_users': 0,
+                    'recent_products': [],
+                    'low_stock_products': [],
+                })
         else:
             # Brand Personnel Dashboard
             brand = user.brand
-            context.update({
-                'brand': brand,
-                'my_permissions': user.custom_permissions.all(),
-                'recent_scans': user.qr_scans.order_by('-scanned_at')[:10],
-            })
+            if brand:
+                context.update({
+                    'brand': brand,
+                    'my_permissions': user.custom_permissions.all(),
+                    'recent_scans': user.qr_scans.order_by('-scanned_at')[:10],
+                })
+            else:
+                # Personnel without assigned brand - show empty data
+                context.update({
+                    'brand': None,
+                    'my_permissions': [],
+                    'recent_scans': [],
+                })
         
         return context
 
