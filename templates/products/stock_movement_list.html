@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Stok Hareketleri - {{ block.super }}{% endblock %}
+
+{% block page_header %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-arrow-left-right"></i>
+                Stok Hareketleri
+            </h1>
+            {% if user.is_brand_admin or user.is_system_admin %}
+            <div>
+                <a href="#" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Yeni Hareket
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Panel</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'products:list' %}">Ürünler</a></li>
+        <li class="breadcrumb-item active">Stok Hareketleri</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Filter and Search -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Arama</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search_query }}" 
+                               placeholder="Ürün adı, SKU, referans...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="movement_type" class="form-label">Hareket Türü</label>
+                        <select class="form-select" id="movement_type" name="movement_type">
+                            <option value="">Tümü</option>
+                            {% for value, display in movement_types %}
+                                <option value="{{ value }}" {% if movement_type_filter == value %}selected{% endif %}>
+                                    {{ display }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="product" class="form-label">Ürün</label>
+                        <select class="form-select" id="product" name="product">
+                            <option value="">Tüm Ürünler</option>
+                            {% for product in recent_products %}
+                                <option value="{{ product.id }}" {% if product_filter == product.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ product.name }} ({{ product.sku }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Filtrele
+                            </button>
+                            <a href="{% url 'products:stock_movements' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Movement List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-ul"></i> Stok Hareketi Listesi
+                    {% if movements %}({{ page_obj.paginator.count }} hareket){% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if movements %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Ürün</th>
+                                    <th>Hareket Türü</th>
+                                    <th>Miktar</th>
+                                    <th>Referans</th>
+                                    <th>İşlem Yapan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in movements %}
+                                <tr>
+                                    <td>{{ movement.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <strong>{{ movement.product.name }}</strong>
+                                        <br><small class="text-muted">SKU: {{ movement.product.sku }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if movement.movement_type == 'in' %}bg-success
+                                            {% elif movement.movement_type == 'out' %}bg-danger
+                                            {% elif movement.movement_type == 'adjustment' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ movement.get_movement_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="{% if movement.movement_type == 'in' %}text-success{% elif movement.movement_type == 'out' %}text-danger{% endif %}">
+                                            {% if movement.movement_type == 'out' %}-{% elif movement.movement_type == 'in' %}+{% endif %}{{ movement.quantity }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if movement.reference %}
+                                            {{ movement.reference }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if movement.created_by %}
+                                            {{ movement.created_by.get_full_name|default:movement.created_by.username }}
+                                        {% else %}
+                                            <span class="text-muted">Sistem</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Stock movement pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if movement_type_filter %}&movement_type={{ movement_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if movement_type_filter %}&movement_type={{ movement_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if movement_type_filter %}&movement_type={{ movement_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if movement_type_filter %}&movement_type={{ movement_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if movement_type_filter %}&movement_type={{ movement_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-arrow-left-right" style="font-size: 3rem; color: #6c757d;"></i>
+                        <p class="mt-3 text-muted">
+                            {% if search_query or movement_type_filter or product_filter %}
+                                Filtrelere uygun stok hareketi bulunamadı.
+                            {% else %}
+                                Henüz stok hareketi bulunmuyor.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

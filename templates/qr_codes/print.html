@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}QR Kod Yazdırma - {{ block.super }}{% endblock %}
+
+{% block page_header %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-printer"></i>
+                QR Kod Yazdırma
+            </h1>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Panel</a></li>
+        <li class="breadcrumb-item active">QR Yazdırma</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-qr-code"></i> QR Kod Seçimi
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if qr_codes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" class="form-check-input" id="selectAll">
+                                    </th>
+                                    <th>QR Kod</th>
+                                    <th>Tür</th>
+                                    <th>Oluşturma Tarihi</th>
+                                    <th>Önizleme</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for qr_code in qr_codes %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input qr-checkbox" value="{{ qr_code.id }}">
+                                    </td>
+                                    <td>
+                                        <strong>{{ qr_code.title }}</strong>
+                                        {% if qr_code.description %}
+                                        <br><small class="text-muted">{{ qr_code.description|truncatechars:50 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ qr_code.get_qr_type_display }}</span>
+                                    </td>
+                                    <td>{{ qr_code.created_at|date:"d.m.Y" }}</td>
+                                    <td>
+                                        {% if qr_code.qr_image %}
+                                        <img src="{{ qr_code.qr_image.url }}" alt="QR" style="width: 40px; height: 40px;">
+                                        {% else %}
+                                        <i class="bi bi-qr-code text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-qr-code" style="font-size: 3rem; color: #6c757d;"></i>
+                        <p class="mt-3 text-muted">Yazdırılacak QR kod bulunamadı.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if qr_codes %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-printer"></i> Yazdırma Ayarları
+                </h6>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="printFormat" class="form-label">Yazdırma Formatı</label>
+                            <select class="form-select" id="printFormat">
+                                {% for value, display in print_formats %}
+                                <option value="{{ value }}">{{ display }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="copies" class="form-label">Kopya Sayısı</label>
+                            <input type="number" class="form-control" id="copies" value="1" min="1" max="100">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-primary" onclick="printSelectedQR()">
+                                    <i class="bi bi-printer"></i> Yazdır
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-clock-history"></i> Son Yazdırma İşleri
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if recent_print_jobs %}
+                    {% for job in recent_print_jobs %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <div class="fw-bold">{{ job.title }}</div>
+                            <small class="text-muted">{{ job.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <span class="badge bg-{% if job.status == 'completed' %}success{% elif job.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                            {{ job.get_status_display }}
+                        </span>
+                    </div>
+                    <hr class="my-2">
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-printer" style="font-size: 2rem; color: #6c757d;"></i>
+                        <p class="mt-2 text-muted">Henüz yazdırma işi bulunmuyor.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const qrCheckboxes = document.querySelectorAll('.qr-checkbox');
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        qrCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+});
+
+function printSelectedQR() {
+    const selectedQR = document.querySelectorAll('.qr-checkbox:checked');
+    if (selectedQR.length === 0) {
+        alert('Yazdırmak için en az bir QR kod seçin.');
+        return;
+    }
+    
+    const format = document.getElementById('printFormat').value;
+    const copies = document.getElementById('copies').value;
+    
+    alert(`${selectedQR.length} QR kod ${format} formatında ${copies} kopya yazdırma işi oluşturulacak.\n\nBu demo sürümünde gerçek yazdırma yapılmamaktadır.`);
+}
+</script>
+{% endblock %}

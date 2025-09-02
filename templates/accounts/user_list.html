@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kullanıcı Yönetimi - {{ block.super }}{% endblock %}
+
+{% block page_header %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-people"></i>
+                Kullanıcı Yönetimi
+            </h1>
+            <div>
+                <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Yeni Kullanıcı
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Panel</a></li>
+        <li class="breadcrumb-item active">Kullanıcılar</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Filter and Search -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Arama</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search" 
+                               name="search" 
+                               value="{{ search_query }}" 
+                               placeholder="Ad, soyad, kullanıcı adı veya e-posta...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="role" class="form-label">Rol</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="">Tüm Roller</option>
+                            {% for value, display in user_roles %}
+                                <option value="{{ value }}" {% if role_filter == value %}selected{% endif %}>
+                                    {{ display }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Filtrele
+                            </button>
+                            <a href="{% url 'accounts:user_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-clockwise"></i> Temizle
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-ul"></i> Kullanıcı Listesi ({{ page_obj.paginator.count }} kullanıcı)
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Kullanıcı</th>
+                                    <th>E-posta</th>
+                                    <th>Rol</th>
+                                    <th>Marka</th>
+                                    <th>Durum</th>
+                                    <th>Son Giriş</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_item in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if user_item.profile_image %}
+                                                <img src="{{ user_item.profile_image.url }}" 
+                                                     alt="{{ user_item.get_full_name|default:user_item.username }}" 
+                                                     class="rounded-circle me-2" 
+                                                     style="width: 32px; height: 32px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="rounded-circle me-2 bg-light d-flex align-items-center justify-content-center" 
+                                                     style="width: 32px; height: 32px;">
+                                                    <i class="bi bi-person" style="font-size: 0.8rem;"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <strong>{{ user_item.get_full_name|default:user_item.username }}</strong>
+                                                {% if user_item.username != user_item.get_full_name %}
+                                                    <br><small class="text-muted">@{{ user_item.username }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user_item.email|default:"—" }}</td>
+                                    <td>
+                                        <span class="badge {% if user_item.is_system_admin %}bg-danger{% elif user_item.is_brand_admin %}bg-warning{% else %}bg-info{% endif %}">
+                                            {{ user_item.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user_item.brand.name|default:"—" }}</td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input user-status-toggle" 
+                                                   type="checkbox" 
+                                                   {% if user_item.is_active %}checked{% endif %}
+                                                   data-user-id="{{ user_item.id }}"
+                                                   {% if user_item.id == user.id %}disabled{% endif %}>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if user_item.last_login %}
+                                            {{ user_item.last_login|date:"d.m.Y H:i" }}
+                                        {% else %}
+                                            <span class="text-muted">Hiç giriş yapmamış</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'accounts:user_detail' user_item.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Detayları Görüntüle">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'accounts:user_edit' user_item.pk %}" 
+                                               class="btn btn-sm btn-outline-secondary"
+                                               title="Düzenle">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% if user_item.is_brand_personnel %}
+                                            <a href="{% url 'accounts:user_permissions' user_item.pk %}" 
+                                               class="btn btn-sm btn-outline-info"
+                                               title="İzinleri Yönet">
+                                                <i class="bi bi-shield-check"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="User list pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-double-left"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">
+                                            <i class="bi bi-chevron-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people" style="font-size: 3rem; color: #6c757d;"></i>
+                        <p class="mt-3 text-muted">
+                            {% if search_query or role_filter %}
+                                Arama kriterlerinize uygun kullanıcı bulunamadı.
+                            {% else %}
+                                Henüz kullanıcı bulunmuyor.
+                            {% endif %}
+                        </p>
+                        {% if user.is_brand_admin or user.is_system_admin %}
+                            <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> İlk Kullanıcıyı Oluştur
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User status toggle functionality
+    const statusToggles = document.querySelectorAll('.user-status-toggle');
+    
+    statusToggles.forEach(function(toggle) {
+        toggle.addEventListener('change', function() {
+            const userId = this.getAttribute('data-user-id');
+            const isActive = this.checked;
+            
+            fetch('{% url "accounts:toggle_user_status" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: 'user_id=' + userId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('main .container-fluid').insertBefore(alertDiv, document.querySelector('main .container-fluid').firstChild);
+                } else {
+                    // Revert toggle state on error
+                    this.checked = !isActive;
+                    
+                    // Show error message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        ${data.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('main .container-fluid').insertBefore(alertDiv, document.querySelector('main .container-fluid').firstChild);
+                }
+            })
+            .catch(error => {
+                // Revert toggle state on error
+                this.checked = !isActive;
+                console.error('Error:', error);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

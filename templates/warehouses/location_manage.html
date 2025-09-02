@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Konum Yönetimi - {{ block.super }}{% endblock %}
+
+{% block page_header %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-grid-3x3"></i>
+                Konum Yönetimi
+            </h1>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Panel</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'warehouses:warehouse_list' %}">Depolar</a></li>
+        <li class="breadcrumb-item active">Konum Yönetimi</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-building"></i> Depo Konum Bilgileri
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if warehouse_data %}
+                    {% for data in warehouse_data %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="bi bi-building"></i> {{ data.warehouse.name }}
+                                <span class="text-muted">({{ data.warehouse.code }})</span>
+                            </h6>
+                            <div class="text-end">
+                                <small class="text-muted d-block">Doluluk: {{ data.occupancy_rate|floatformat:1 }}%</small>
+                                <small class="text-muted">{{ data.occupied_cells }}/{{ data.total_cells }} hücre</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            {% for corridor_data in data.corridors %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0">{{ corridor_data.corridor.name }}</h6>
+                                        <span class="badge bg-secondary">{{ corridor_data.occupancy_rate|floatformat:0 }}%</span>
+                                    </div>
+                                    <small class="text-muted">
+                                        {{ corridor_data.occupied_cells }}/{{ corridor_data.total_cells }} hücre dolu
+                                    </small>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar" 
+                                             role="progressbar" 
+                                             style="width: {{ corridor_data.occupancy_rate }}%"
+                                             aria-valuenow="{{ corridor_data.occupancy_rate }}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <hr>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-grid-3x3" style="font-size: 3rem; color: #6c757d;"></i>
+                        <p class="mt-3 text-muted">Henüz depo konumu bulunmuyor.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
