@@ -45,7 +45,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{% url 'products:list' %}">Ürün Listesi</a></li>
                             <li><a class="dropdown-item" href="{% url 'products:category_list' %}">Kategori Yönetimi</a></li>
-                            <li><a class="dropdown-item" href="#">Stok Hareketleri</a></li>
+                            <li><a class="dropdown-item" href="{% url 'products:stock_movements' %}">Stok Hareketleri</a></li>
                         </ul>
                     </li>
                     
@@ -54,8 +54,8 @@
                             <i class="bi bi-shop"></i> Mağazalar
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Mağaza Listesi</a></li>
-                            <li><a class="dropdown-item" href="#">Personel Yönetimi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'shops:shop_list' %}">Mağaza Listesi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'shops:staff_list' %}">Personel Yönetimi</a></li>
                         </ul>
                     </li>
                     
@@ -64,8 +64,8 @@
                             <i class="bi bi-building"></i> Depolar
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">Depo Listesi</a></li>
-                            <li><a class="dropdown-item" href="#">Konum Yönetimi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'warehouses:warehouse_list' %}">Depo Listesi</a></li>
+                            <li><a class="dropdown-item" href="{% url 'warehouses:location_manage' %}">Konum Yönetimi</a></li>
                         </ul>
                     </li>
                     {% endif %}
@@ -75,8 +75,8 @@
                             <i class="bi bi-qr-code"></i> QR Kodlar
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#">QR Tarama</a></li>
-                            <li><a class="dropdown-item" href="#">QR Yazdırma</a></li>
+                            <li><a class="dropdown-item" href="{% url 'qr_codes:scanner' %}">QR Tarama</a></li>
+                            <li><a class="dropdown-item" href="{% url 'qr_codes:print' %}">QR Yazdırma</a></li>
                         </ul>
                     </li>
                 </ul>

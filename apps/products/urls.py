@@ -9,6 +9,9 @@ urlpatterns = [
     path('', views.ProductListView.as_view(), name='list'),
     path('create/', views.ProductCreateView.as_view(), name='create'),
     
+    # Stock Movement URLs
+    path('stock-movements/', views.StockMovementListView.as_view(), name='stock_movements'),
+    
     # Category URLs - must come before product detail to avoid slug conflict
     path('categories/', views.CategoryListView.as_view(), name='category_list'),
     path('categories/create/', views.CategoryCreateView.as_view(), name='category_create'),

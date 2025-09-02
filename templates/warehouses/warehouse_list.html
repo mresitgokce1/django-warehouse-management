@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Depo Listesi - {{ block.super }}{% endblock %}
+
+{% block page_header %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-building"></i>
+                Depo Yönetimi
+            </h1>
+            {% if user.is_brand_admin or user.is_system_admin %}
+            <div>
+                <a href="#" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Yeni Depo
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'accounts:dashboard' %}">Panel</a></li>
+        <li class="breadcrumb-item active">Depolar</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-list-ul"></i> Depo Listesi
+                    {% if warehouses %}({{ page_obj.paginator.count }} depo){% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if warehouses %}
+                    <div class="row">
+                        {% for warehouse in warehouses %}
+                        <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
+                                            <h6 class="card-title mb-1">{{ warehouse.name }}</h6>
+                                            <small class="text-muted">{{ warehouse.code }}</small>
+                                        </div>
+                                        <div>
+                                            {% if warehouse.is_active %}
+                                                <span class="badge bg-success">Aktif</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Pasif</span>
+                                            {% endif %}
+                                            {% if warehouse.temperature_controlled %}
+                                                <span class="badge bg-info">Soğuk</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-shop"></i> {{ warehouse.shop.name }}
+                                        </small>
+                                        {% if warehouse.total_area %}
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-aspect-ratio"></i> {{ warehouse.total_area }} m²
+                                        </small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="row text-center mb-3">
+                                        <div class="col-6">
+                                            <div class="border-end">
+                                                <div class="fw-bold">{{ warehouse.total_corridors }}</div>
+                                                <small class="text-muted">Koridor</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="fw-bold">{{ warehouse.total_cells }}</div>
+                                            <small class="text-muted">Hücre</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="small">Doluluk Oranı:</span>
+                                            <span class="small fw-bold">{{ warehouse.occupancy_rate|floatformat:1 }}%</span>
+                                        </div>
+                                        <div class="progress" style="height: 6px;">
+                                            <div class="progress-bar" 
+                                                 role="progressbar" 
+                                                 style="width: {{ warehouse.occupancy_rate }}%"
+                                                 aria-valuenow="{{ warehouse.occupancy_rate }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if user.is_brand_admin or user.is_system_admin %}
+                                    <div class="btn-group w-100" role="group">
+                                        <a href="#" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Detay
+                                        </a>
+                                        <a href="#" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-pencil"></i> Düzenle
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-building" style="font-size: 3rem; color: #6c757d;"></i>
+                        <p class="mt-3 text-muted">Henüz depo bulunmuyor.</p>
+                        {% if user.is_brand_admin or user.is_system_admin %}
+                            <a href="#" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> İlk Depoyu Oluştur
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

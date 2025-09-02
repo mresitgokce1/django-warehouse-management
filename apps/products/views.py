@@ -261,3 +261,60 @@ class CategoryUpdateView(LoginRequiredMixin, BrandAccessMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
+
+
+class StockMovementListView(LoginRequiredMixin, BrandAccessMixin, ListView):
+    """List stock movements with filtering."""
+    model = StockMovement
+    template_name = 'products/stock_movement_list.html'
+    context_object_name = 'movements'
+    paginate_by = 30
+    
+    def get_queryset(self):
+        user = self.request.user
+        queryset = StockMovement.objects.select_related(
+            'product', 'product__brand', 'created_by'
+        )
+        
+        # Filter by user's brand
+        if not user.is_system_admin:
+            queryset = queryset.filter(product__brand=user.brand)
+        
+        # Search functionality
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(product__name__icontains=search_query) |
+                Q(product__sku__icontains=search_query) |
+                Q(reference__icontains=search_query) |
+                Q(notes__icontains=search_query)
+            )
+        
+        # Movement type filter
+        movement_type = self.request.GET.get('movement_type')
+        if movement_type:
+            queryset = queryset.filter(movement_type=movement_type)
+        
+        # Product filter
+        product_id = self.request.GET.get('product')
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+        
+        return queryset.order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['movement_type_filter'] = self.request.GET.get('movement_type', '')
+        context['product_filter'] = self.request.GET.get('product', '')
+        context['movement_types'] = StockMovement.MovementType.choices
+        
+        # Get recent products for filter dropdown
+        user = self.request.user
+        if user.is_system_admin:
+            recent_products = Product.objects.all()
+        else:
+            recent_products = Product.objects.filter(brand=user.brand)
+        
+        context['recent_products'] = recent_products.order_by('-updated_at')[:20]
+        return context
